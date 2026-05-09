@@ -121,7 +121,7 @@ export function Courses() {
                         c={c}
                         enrolled={isEnrolled(c.id)}
                         favorite={isFavorite(c.id)}
-                        onOpen={() => goDetail(c.id)}
+                        onOpen={() => goDetail(c.id, isEnrolled(c.id))}
                         onFavorite={() => handleFavorite(c.id)}
                       />
                     </CarouselItem>
@@ -157,7 +157,7 @@ export function Courses() {
                   c={c}
                   enrolled={isEnrolled(c.id)}
                   favorite={isFavorite(c.id)}
-                  onOpen={() => goDetail(c.id)}
+                  onOpen={() => goDetail(c.id, isEnrolled(c.id))}
                   onFavorite={() => handleFavorite(c.id)}
                 />
               ))}
