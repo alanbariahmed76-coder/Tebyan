@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Clock, Play, Heart, Users, ChevronRight, ChevronLeft } from "lucide-react";
+import { Star, Clock, Play, Heart, Users, ChevronRight, ChevronLeft, Search } from "lucide-react";
 import { toast } from "sonner";
 import { courses, categories, type Course } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
@@ -13,16 +13,30 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
+type SortKey = "newest" | "rating" | "title";
+
 export function Courses() {
   const [active, setActive] = useState("الكل");
   const [visible, setVisible] = useState(8);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
   const { user, isEnrolled, isFavorite, toggleFavorite } = useAuth();
   const nav = useNavigate();
 
-  const filtered = active === "الكل" ? courses : courses.filter((c) => c.cat === active);
+  const filtered = useMemo(() => {
+    const q = query.trim();
+    let list = active === "الكل" ? courses : courses.filter((c) => c.cat === active);
+    if (q) list = list.filter((c) => c.title.includes(q) || c.instructor.includes(q));
+    const out = [...list];
+    if (sort === "rating") out.sort((a, b) => b.rating - a.rating);
+    else if (sort === "title") out.sort((a, b) => a.title.localeCompare(b.title, "ar"));
+    else out.sort((a, b) => Number(b.id.replace("c-", "")) - Number(a.id.replace("c-", "")));
+    return out;
+  }, [active, query, sort]);
   const shown = filtered.slice(0, visible);
 
-  const goDetail = (id: string) => nav({ to: "/courses/$courseId", params: { courseId: id } });
+  const goDetail = (id: string, resume = false) =>
+    nav({ to: "/courses/$courseId", params: { courseId: id }, search: resume ? { resume: true } : {} });
 
   const handleFavorite = (id: string) => {
     if (!user) {
