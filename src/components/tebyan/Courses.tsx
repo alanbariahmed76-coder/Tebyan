@@ -70,13 +70,13 @@ export function Courses() {
               <Carousel opts={{ direction: "rtl", align: "start", loop: false }} className="w-full">
                 <CarouselContent className="-ml-4">
                   {filtered.map((c) => (
-                    <CarouselItem key={c.title} className="pl-4 basis-[85%] sm:basis-[60%]">
+                    <CarouselItem key={c.id} className="pl-4 basis-[85%] sm:basis-[60%]">
                       <CourseCard
                         c={c}
-                        enrolled={isEnrolled(c.title)}
-                        favorite={isFavorite(c.title)}
-                        onEnroll={() => handleEnroll(c.title)}
-                        onFavorite={() => handleFavorite(c.title)}
+                        enrolled={isEnrolled(c.id)}
+                        favorite={isFavorite(c.id)}
+                        onOpen={() => goDetail(c.id)}
+                        onFavorite={() => handleFavorite(c.id)}
                       />
                     </CarouselItem>
                   ))}
@@ -107,12 +107,12 @@ export function Courses() {
             >
               {shown.map((c) => (
                 <CourseCard
-                  key={c.title}
+                  key={c.id}
                   c={c}
-                  enrolled={isEnrolled(c.title)}
-                  favorite={isFavorite(c.title)}
-                  onEnroll={() => handleEnroll(c.title)}
-                  onFavorite={() => handleFavorite(c.title)}
+                  enrolled={isEnrolled(c.id)}
+                  favorite={isFavorite(c.id)}
+                  onOpen={() => goDetail(c.id)}
+                  onFavorite={() => handleFavorite(c.id)}
                 />
               ))}
             </motion.div>
@@ -135,13 +135,13 @@ export function Courses() {
 }
 
 function CourseCard({
-  c, enrolled, favorite, onEnroll, onFavorite,
+  c, enrolled, favorite, onOpen, onFavorite,
 }: {
-  c: typeof courses[number]; enrolled: boolean; favorite: boolean; onEnroll: () => void; onFavorite: () => void;
+  c: Course; enrolled: boolean; favorite: boolean; onOpen: () => void; onFavorite: () => void;
 }) {
   return (
     <article className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-luxe hover:-translate-y-1 transition-all flex flex-col h-full">
-      <div className="relative aspect-video overflow-hidden">
+      <Link to="/courses/$courseId" params={{ courseId: c.id }} className="relative aspect-video overflow-hidden block">
         <img src={c.img} alt={c.title} loading="lazy" width={800} height={600} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
         {c.badge && (
           <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold ${c.badge === "best" ? "bg-gold-gradient text-gold-foreground" : "bg-primary text-primary-foreground"}`}>
@@ -149,7 +149,7 @@ function CourseCard({
           </span>
         )}
         <button
-          onClick={onFavorite}
+          onClick={(e) => { e.preventDefault(); onFavorite(); }}
           aria-label="مفضلة"
           className={`absolute top-3 left-3 size-9 rounded-full flex items-center justify-center backdrop-blur transition ${favorite ? "bg-destructive text-white" : "bg-white/90 text-primary hover:bg-white"}`}
         >
@@ -158,7 +158,7 @@ function CourseCard({
         <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/40 transition flex items-center justify-center pointer-events-none">
           <Play className="size-12 text-white opacity-0 group-hover:opacity-100 transition fill-current" />
         </div>
-      </div>
+      </Link>
       <div className="p-5 flex-1 flex flex-col">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{c.instructor}</span>
@@ -181,12 +181,12 @@ function CourseCard({
         <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-3">
           <span className="text-xl font-black text-primary">{c.price} <span className="text-xs text-muted-foreground font-normal">ر.س</span></span>
           <button
-            onClick={onEnroll}
+            onClick={onOpen}
             className={`px-4 py-2 rounded-full text-xs font-bold transition ${
-              enrolled ? "bg-emerald-500/15 text-emerald-700" : "bg-primary text-primary-foreground hover:opacity-90"
+              enrolled ? "bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25" : "bg-primary text-primary-foreground hover:opacity-90"
             }`}
           >
-            {enrolled ? "✓ مُسجَّل" : "سجّل الآن"}
+            {enrolled ? "✓ متابعة" : "سجّل الآن"}
           </button>
         </div>
       </div>
