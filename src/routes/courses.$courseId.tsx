@@ -1,15 +1,23 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowLeft, Star, Clock, Users, BookOpen, Award, Play, CheckCircle2, Circle, Lock, Heart, ChevronDown, Download, Eye } from "lucide-react";
-import { getCourseById, totalLessons, type Course } from "@/lib/mock-data";
+import { ArrowLeft, Star, Clock, Users, BookOpen, Award, Play, Pause, CheckCircle2, Circle, Lock, Heart, ChevronDown, Download, Eye, RotateCcw, SkipForward } from "lucide-react";
+import { z } from "zod";
+import { fallback, zodValidator } from "@tanstack/zod-adapter";
+import { getCourseById, totalLessons, type Course, type Lesson } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
 import { Navbar } from "@/components/tebyan/Navbar";
 import { Footer } from "@/components/tebyan/Footer";
 import { downloadCertificatePDF, previewCertificate } from "@/lib/certificate";
 
+const searchSchema = z.object({
+  resume: fallback(z.boolean(), false).default(false),
+  lesson: fallback(z.string(), "").default(""),
+});
+
 export const Route = createFileRoute("/courses/$courseId")({
+  validateSearch: zodValidator(searchSchema),
   loader: ({ params }) => {
     const course = getCourseById(params.courseId);
     if (!course) throw notFound();
