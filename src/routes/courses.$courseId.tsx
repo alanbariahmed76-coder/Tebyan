@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { ArrowLeft, Star, Clock, Users, BookOpen, Award, Play, CheckCircle2, Circle, Lock, Heart, ChevronDown } from "lucide-react";
-import { getCourseById, totalLessons } from "@/lib/mock-data";
+import { getCourseById, totalLessons, type Course } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
 import { Navbar } from "@/components/tebyan/Navbar";
 import { Footer } from "@/components/tebyan/Footer";
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/courses/$courseId")({
 });
 
 function CourseDetail() {
-  const { course } = Route.useLoaderData();
+  const { course } = Route.useLoaderData() as { course: Course };
   const { user, isEnrolled, isFavorite, enroll, toggleFavorite, toggleLesson, getCompleted } = useAuth();
   const nav = useNavigate();
   const enrolled = isEnrolled(course.id);
