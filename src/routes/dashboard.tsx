@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/auth";
-import { courses, dashboardStats } from "@/lib/mock-data";
+import { courses, dashboardStats, totalLessons, type Course } from "@/lib/mock-data";
 import { DashboardSidebar } from "@/components/tebyan/DashboardSidebar";
 import { BookOpen, Award, Clock, TrendingUp, Play, CheckCircle2, Heart, Star, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function StudentDashboard() {
-  const { user, enrolled, favorites, toggleFavorite } = useAuth();
+  const { user, enrolled, favorites, toggleFavorite, getCompleted } = useAuth();
   const nav = useNavigate();
   const [tab, setTab] = useState("نظرة عامة");
   const [search, setSearch] = useState("");
@@ -29,10 +29,16 @@ function StudentDashboard() {
 
   if (!user) return null;
 
-  const enrolledCourses = courses.filter((c) => enrolled.includes(c.title));
-  const favoriteCourses = courses.filter((c) => favorites.includes(c.title));
+  const enrolledCourses = courses.filter((c) => enrolled.includes(c.id));
+  const favoriteCourses = courses.filter((c) => favorites.includes(c.id));
   const filtered = enrolledCourses.filter((c) => c.title.includes(search));
   const stats = dashboardStats.student;
+  const progressOf = (c: Course) => {
+    const done = getCompleted(c.id).length;
+    const total = totalLessons(c);
+    return total ? Math.round((done / total) * 100) : 0;
+  };
+  const completedCount = enrolledCourses.filter((c) => progressOf(c) === 100).length;
 
   return (
     <div dir="rtl" className="min-h-screen bg-secondary/30 flex">
@@ -56,9 +62,9 @@ function StudentDashboard() {
             <>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[
-                  { label: "دورات نشطة", value: enrolledCourses.length || stats.coursesInProgress, icon: BookOpen, color: "text-primary", bg: "bg-primary/10" },
-                  { label: "دورات مكتملة", value: stats.completed, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-                  { label: "شهادات", value: stats.certificates, icon: Award, color: "text-gold", bg: "bg-gold/15" },
+                  { label: "دورات نشطة", value: enrolledCourses.length, icon: BookOpen, color: "text-primary", bg: "bg-primary/10" },
+                  { label: "دورات مكتملة", value: completedCount, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+                  { label: "شهادات", value: completedCount, icon: Award, color: "text-gold", bg: "bg-gold/15" },
                   { label: "ساعات تعلم", value: stats.learningHours, icon: Clock, color: "text-violet-600", bg: "bg-violet-500/10" },
                 ].map((s, i) => (
                   <motion.div key={s.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-card rounded-2xl p-6 border border-border">
@@ -81,7 +87,7 @@ function StudentDashboard() {
                 ) : (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {enrolledCourses.slice(0, 3).map((c) => (
-                      <ProgressCard key={c.title} title={c.title} img={c.img} instructor={c.instructor} progress={Math.floor(Math.random() * 80) + 10} />
+                      <ProgressCard key={c.id} c={c} progress={progressOf(c)} onContinue={() => nav({ to: "/courses/$courseId", params: { courseId: c.id } })} />
                     ))}
                   </div>
                 )}
@@ -100,7 +106,7 @@ function StudentDashboard() {
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {filtered.map((c) => (
-                    <ProgressCard key={c.title} title={c.title} img={c.img} instructor={c.instructor} progress={Math.floor(Math.random() * 80) + 10} />
+                    <ProgressCard key={c.id} c={c} progress={progressOf(c)} onContinue={() => nav({ to: "/courses/$courseId", params: { courseId: c.id } })} />
                   ))}
                 </div>
               )}
@@ -134,13 +140,15 @@ function StudentDashboard() {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {favoriteCourses.map((c) => (
-                  <article key={c.title} className="bg-card rounded-2xl overflow-hidden border border-border">
-                    <img src={c.img} alt={c.title} className="aspect-video w-full object-cover" />
+                  <article key={c.id} className="bg-card rounded-2xl overflow-hidden border border-border">
+                    <Link to="/courses/$courseId" params={{ courseId: c.id }}>
+                      <img src={c.img} alt={c.title} className="aspect-video w-full object-cover" />
+                    </Link>
                     <div className="p-5">
                       <h3 className="font-bold text-primary line-clamp-2 min-h-[3rem]">{c.title}</h3>
                       <div className="mt-3 flex items-center justify-between text-sm">
                         <span className="flex items-center gap-1 text-gold font-bold"><Star className="size-4 fill-current" /> {c.rating}</span>
-                        <button onClick={() => { toggleFavorite(c.title); toast("أُزيلت من المفضلة"); }} className="text-destructive">
+                        <button onClick={() => { toggleFavorite(c.id); toast("أُزيلت من المفضلة"); }} className="text-destructive">
                           <Heart className="size-5 fill-current" />
                         </button>
                       </div>
@@ -184,27 +192,33 @@ function StudentDashboard() {
   );
 }
 
-function ProgressCard({ title, img, instructor, progress }: { title: string; img: string; instructor: string; progress: number }) {
+function ProgressCard({ c, progress, onContinue }: { c: Course; progress: number; onContinue: () => void }) {
+  const completed = progress === 100;
   return (
-    <article className="bg-secondary/40 rounded-2xl overflow-hidden border border-border group">
-      <div className="relative aspect-video">
-        <img src={img} alt={title} className="w-full h-full object-cover" />
-        <button onClick={() => toast("جاري تشغيل الدرس التالي...")} className="absolute inset-0 m-auto size-14 rounded-full bg-gold-gradient text-gold-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-gold">
-          <Play className="size-5 fill-current" />
-        </button>
-      </div>
-      <div className="p-5">
-        <p className="text-xs text-muted-foreground">{instructor}</p>
-        <h3 className="mt-1 font-bold text-primary line-clamp-2 min-h-[3rem]">{title}</h3>
+    <article className="bg-secondary/40 rounded-2xl overflow-hidden border border-border group flex flex-col">
+      <button onClick={onContinue} className="relative aspect-video block">
+        <img src={c.img} alt={c.title} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/40 transition flex items-center justify-center">
+          <span className="size-14 rounded-full bg-gold-gradient text-gold-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-gold">
+            <Play className="size-5 fill-current" />
+          </span>
+        </div>
+      </button>
+      <div className="p-5 flex-1 flex flex-col">
+        <p className="text-xs text-muted-foreground">{c.instructor}</p>
+        <h3 className="mt-1 font-bold text-primary line-clamp-2 min-h-[3rem]">{c.title}</h3>
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs mb-1.5">
-            <span className="text-muted-foreground">التقدم</span>
+            <span className="text-muted-foreground">{completed ? "مكتملة 🎉" : "التقدم"}</span>
             <span className="font-bold text-primary">{progress}%</span>
           </div>
           <div className="h-2 bg-border rounded-full overflow-hidden">
-            <div className="h-full bg-gold-gradient transition-all" style={{ width: `${progress}%` }} />
+            <div className={`h-full transition-all ${completed ? "bg-emerald-500" : "bg-gold-gradient"}`} style={{ width: `${progress}%` }} />
           </div>
         </div>
+        <button onClick={onContinue} className={`mt-5 w-full py-2.5 rounded-full text-sm font-bold transition ${completed ? "bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25" : "bg-primary text-primary-foreground hover:opacity-90"}`}>
+          {progress === 0 ? "ابدأ التعلم" : completed ? "مراجعة" : "متابعة"}
+        </button>
       </div>
     </article>
   );
