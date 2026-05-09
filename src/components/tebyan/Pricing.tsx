@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/auth";
 
 const plans = [
   {
@@ -21,6 +24,16 @@ const plans = [
 ];
 
 export function Pricing() {
+  const nav = useNavigate();
+  const { user } = useAuth();
+  const subscribe = (plan: string) => {
+    if (!user) {
+      toast("سجّل دخولك لإكمال الاشتراك", { action: { label: "تسجيل", onClick: () => nav({ to: "/login" }) } });
+      return;
+    }
+    toast.success(`تم تفعيل ${plan} بنجاح 🎉`);
+    nav({ to: "/dashboard" });
+  };
   return (
     <section id="pricing" className="py-24 bg-secondary/40">
       <div className="mx-auto max-w-6xl px-6">
@@ -65,7 +78,7 @@ export function Pricing() {
                   </li>
                 ))}
               </ul>
-              <button className={`mt-10 w-full py-4 rounded-full font-bold transition ${
+              <button onClick={() => subscribe(p.name)} className={`mt-10 w-full py-4 rounded-full font-bold transition ${
                 p.highlight
                   ? "bg-gold-gradient text-gold-foreground shadow-gold hover:scale-[1.02]"
                   : "bg-primary text-primary-foreground hover:opacity-90"

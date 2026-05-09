@@ -1,27 +1,48 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Clock, Play } from "lucide-react";
-import imgLeadership from "@/assets/course-leadership.jpg";
-import imgManagement from "@/assets/course-management.jpg";
-import imgDev from "@/assets/course-development.jpg";
-import imgTech from "@/assets/course-tech.jpg";
-
-type Course = {
-  title: string; instructor: string; rating: number; img: string; badge?: "best" | "new"; duration: string; cat: string;
-};
-
-const courses: Course[] = [
-  { title: "أساسيات الإدارة الحديثة للقادة", instructor: "د. سلمى الراشد", rating: 4.9, img: imgManagement, badge: "best", duration: "3 س 45 د", cat: "الإدارة" },
-  { title: "القيادة الملهمة وبناء الفرق", instructor: "أحمد خليل", rating: 4.8, img: imgLeadership, badge: "best", duration: "2 س 30 د", cat: "القيادة" },
-  { title: "عقلية النمو والذكاء العاطفي", instructor: "د. هند العنزي", rating: 4.9, img: imgDev, badge: "new", duration: "1 س 50 د", cat: "تطوير الذات" },
-  { title: "الذكاء الاصطناعي للمحترفين", instructor: "م. يوسف ناصر", rating: 4.7, img: imgTech, badge: "new", duration: "4 س 10 د", cat: "التكنولوجيا" },
-];
-
-const tabs = ["الكل", "الإدارة", "القيادة", "تطوير الذات", "التكنولوجيا"];
+import { Star, Clock, Play, Heart, Users, ChevronRight, ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
+import { courses, categories } from "@/lib/mock-data";
+import { useAuth } from "@/lib/auth";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 export function Courses() {
   const [active, setActive] = useState("الكل");
+  const [visible, setVisible] = useState(8);
+  const { user, isEnrolled, isFavorite, enroll, toggleFavorite } = useAuth();
+  const nav = useNavigate();
+
   const filtered = active === "الكل" ? courses : courses.filter((c) => c.cat === active);
+  const shown = filtered.slice(0, visible);
+
+  const handleEnroll = (title: string) => {
+    if (!user) {
+      toast("سجّل الدخول للالتحاق بالدورة", { action: { label: "تسجيل", onClick: () => nav({ to: "/login" }) } });
+      return;
+    }
+    if (isEnrolled(title)) {
+      toast.info("أنت مسجّل مسبقاً، توجّه للوحة التحكم");
+      return;
+    }
+    enroll(title);
+    toast.success(`تم التسجيل في "${title.slice(0, 30)}..."`);
+  };
+
+  const handleFavorite = (title: string) => {
+    if (!user) {
+      toast("سجّل الدخول لإضافة الدورة للمفضلة");
+      return;
+    }
+    toggleFavorite(title);
+    toast(isFavorite(title) ? "أُزيلت من المفضلة" : "أُضيفت للمفضلة");
+  };
 
   return (
     <section id="courses" className="py-24 bg-secondary/40">
@@ -30,12 +51,13 @@ export function Courses() {
           <div>
             <span className="text-gold text-sm font-bold">الأكثر رواجاً</span>
             <h2 className="mt-2 text-4xl md:text-5xl font-black text-primary">دورات مختارة بعناية</h2>
+            <p className="mt-3 text-muted-foreground">+{courses.length} دورة احترافية في انتظارك</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {tabs.map((t) => (
+            {categories.map((t) => (
               <button
                 key={t}
-                onClick={() => setActive(t)}
+                onClick={() => { setActive(t); setVisible(8); }}
                 className={`px-5 py-2.5 rounded-full text-sm font-semibold transition ${
                   active === t ? "bg-primary text-primary-foreground shadow-luxe" : "bg-card border border-border text-foreground/70 hover:border-primary/30"
                 }`}
@@ -46,45 +68,139 @@ export function Courses() {
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={active}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {filtered.map((c) => (
-              <article key={c.title} className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-luxe hover:-translate-y-1 transition-all">
-                <div className="relative aspect-video overflow-hidden">
-                  <img src={c.img} alt={c.title} loading="lazy" width={800} height={600} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
-                  {c.badge && (
-                    <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold ${c.badge === "best" ? "bg-gold-gradient text-gold-foreground" : "bg-primary text-primary-foreground"}`}>
-                      {c.badge === "best" ? "الأكثر مبيعاً" : "جديد"}
-                    </span>
-                  )}
-                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/40 transition flex items-center justify-center">
-                    <Play className="size-12 text-white opacity-0 group-hover:opacity-100 transition fill-current" />
-                  </div>
+        {/* Mobile carousel */}
+        <div className="md:hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`m-${active}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <Carousel opts={{ direction: "rtl", align: "start", loop: false }} className="w-full">
+                <CarouselContent className="-ml-4">
+                  {filtered.map((c) => (
+                    <CarouselItem key={c.title} className="pl-4 basis-[85%] sm:basis-[60%]">
+                      <CourseCard
+                        c={c}
+                        enrolled={isEnrolled(c.title)}
+                        favorite={isFavorite(c.title)}
+                        onEnroll={() => handleEnroll(c.title)}
+                        onFavorite={() => handleFavorite(c.title)}
+                      />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <div className="flex items-center justify-center gap-3 mt-6">
+                  <CarouselPrevious className="static translate-y-0 size-10 bg-card border-border [&_svg]:hidden">
+                    <ChevronRight className="size-5" />
+                  </CarouselPrevious>
+                  <CarouselNext className="static translate-y-0 size-10 bg-primary text-primary-foreground border-primary [&_svg]:hidden">
+                    <ChevronLeft className="size-5" />
+                  </CarouselNext>
                 </div>
-                <div className="p-5">
-                  <p className="text-xs text-muted-foreground">{c.instructor}</p>
-                  <h3 className="mt-2 font-bold text-primary leading-snug line-clamp-2 min-h-[3rem]">{c.title}</h3>
-                  <div className="mt-4 flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1 text-gold font-bold">
-                      <Star className="size-4 fill-current" /> {c.rating}
-                    </span>
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="size-4" /> {c.duration}
-                    </span>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </motion.div>
-        </AnimatePresence>
+              </Carousel>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Desktop grid */}
+        <div className="hidden md:block">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`d-${active}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+              className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            >
+              {shown.map((c) => (
+                <CourseCard
+                  key={c.title}
+                  c={c}
+                  enrolled={isEnrolled(c.title)}
+                  favorite={isFavorite(c.title)}
+                  onEnroll={() => handleEnroll(c.title)}
+                  onFavorite={() => handleFavorite(c.title)}
+                />
+              ))}
+            </motion.div>
+          </AnimatePresence>
+
+          {visible < filtered.length && (
+            <div className="mt-10 text-center">
+              <button
+                onClick={() => setVisible((v) => v + 4)}
+                className="px-8 py-3.5 rounded-full bg-card border border-border text-primary font-bold hover:border-primary/40 hover:shadow-luxe transition"
+              >
+                عرض المزيد ({filtered.length - visible} دورة)
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </section>
+  );
+}
+
+function CourseCard({
+  c, enrolled, favorite, onEnroll, onFavorite,
+}: {
+  c: typeof courses[number]; enrolled: boolean; favorite: boolean; onEnroll: () => void; onFavorite: () => void;
+}) {
+  return (
+    <article className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-luxe hover:-translate-y-1 transition-all flex flex-col h-full">
+      <div className="relative aspect-video overflow-hidden">
+        <img src={c.img} alt={c.title} loading="lazy" width={800} height={600} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+        {c.badge && (
+          <span className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold ${c.badge === "best" ? "bg-gold-gradient text-gold-foreground" : "bg-primary text-primary-foreground"}`}>
+            {c.badge === "best" ? "الأكثر مبيعاً" : "جديد"}
+          </span>
+        )}
+        <button
+          onClick={onFavorite}
+          aria-label="مفضلة"
+          className={`absolute top-3 left-3 size-9 rounded-full flex items-center justify-center backdrop-blur transition ${favorite ? "bg-destructive text-white" : "bg-white/90 text-primary hover:bg-white"}`}
+        >
+          <Heart className={`size-4 ${favorite ? "fill-current" : ""}`} />
+        </button>
+        <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/40 transition flex items-center justify-center pointer-events-none">
+          <Play className="size-12 text-white opacity-0 group-hover:opacity-100 transition fill-current" />
+        </div>
+      </div>
+      <div className="p-5 flex-1 flex flex-col">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{c.instructor}</span>
+          <span className="px-2 py-0.5 rounded-full bg-secondary font-semibold">{c.level}</span>
+        </div>
+        <h3 className="mt-2 font-bold text-primary leading-snug line-clamp-2 min-h-[3rem]">{c.title}</h3>
+
+        <div className="mt-3 flex items-center justify-between text-xs">
+          <span className="flex items-center gap-1 text-gold font-bold">
+            <Star className="size-3.5 fill-current" /> {c.rating}
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Users className="size-3.5" /> {c.students.toLocaleString("ar-SA")}
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Clock className="size-3.5" /> {c.duration}
+          </span>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-3">
+          <span className="text-xl font-black text-primary">{c.price} <span className="text-xs text-muted-foreground font-normal">ر.س</span></span>
+          <button
+            onClick={onEnroll}
+            className={`px-4 py-2 rounded-full text-xs font-bold transition ${
+              enrolled ? "bg-emerald-500/15 text-emerald-700" : "bg-primary text-primary-foreground hover:opacity-90"
+            }`}
+          >
+            {enrolled ? "✓ مُسجَّل" : "سجّل الآن"}
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
