@@ -44,6 +44,7 @@ export const Route = createFileRoute("/courses/$courseId")({
 
 function CourseDetail() {
   const { course } = Route.useLoaderData() as { course: Course };
+  const { resume, lesson: lessonParam } = Route.useSearch();
   const { user, isEnrolled, isFavorite, enroll, toggleFavorite, toggleLesson, getCompleted } = useAuth();
   const nav = useNavigate();
   const enrolled = isEnrolled(course.id);
@@ -54,6 +55,22 @@ function CourseDetail() {
   const allLessons = useMemo(() => course.modules.flatMap((m) => m.lessons), [course]);
   const nextLesson = allLessons.find((l) => !completed.includes(l.id));
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
+
+  // Auto-resume from URL ?resume=1 or ?lesson=lX
+  useEffect(() => {
+    if (lessonParam) {
+      const exists = allLessons.find((l) => l.id === lessonParam);
+      if (exists) { setActiveLesson(lessonParam); return; }
+    }
+    if (resume && enrolled) {
+      const target = nextLesson?.id || allLessons[0]?.id || null;
+      if (target) {
+        setActiveLesson(target);
+        toast(nextLesson ? "نتابع من حيث توقفت 👌" : "أكملت كل الدروس 🎉");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resume, lessonParam, enrolled]);
 
   const handleEnroll = () => {
     if (!user) {
@@ -86,6 +103,19 @@ function CourseDetail() {
   };
 
   const currentLesson = activeLesson ? allLessons.find((l) => l.id === activeLesson) : null;
+  const currentIndex = currentLesson ? allLessons.findIndex((l) => l.id === currentLesson.id) : -1;
+  const goNextLesson = () => {
+    const next = allLessons[currentIndex + 1];
+    if (next) setActiveLesson(next.id);
+    else toast("هذا آخر درس في الدورة 🎓");
+  };
+  const handleLessonComplete = (lessonId: string) => {
+    if (!enrolled) return;
+    if (!completed.includes(lessonId)) {
+      toggleLesson(course.id, lessonId);
+      toast.success("تم إكمال الدرس تلقائياً ✓");
+    }
+  };
 
   return (
     <div dir="rtl" className="min-h-screen bg-background">
