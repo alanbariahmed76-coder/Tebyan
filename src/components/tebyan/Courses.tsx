@@ -71,6 +71,38 @@ export function Courses() {
           </div>
         </div>
 
+        {/* Search + Sort */}
+        <div className="mb-8 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-card border border-border rounded-2xl p-3">
+          <div className="relative flex-1">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setVisible(8); }}
+              placeholder="ابحث عن دورة أو مدرّب..."
+              className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-secondary/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-muted-foreground whitespace-nowrap">ترتيب حسب:</label>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="px-4 py-2.5 rounded-xl bg-secondary/50 text-sm font-semibold text-primary border-0 focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+            >
+              <option value="newest">الأحدث</option>
+              <option value="rating">الأعلى تقييماً</option>
+              <option value="title">العنوان (أ-ي)</option>
+            </select>
+          </div>
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="text-center py-16 bg-card rounded-2xl border border-border">
+            <p className="font-bold text-primary">لا توجد نتائج مطابقة</p>
+            <p className="text-sm text-muted-foreground mt-1">جرّب كلمة بحث أو تصنيفاً مختلفاً</p>
+          </div>
+        )}
+
         {/* Mobile carousel */}
         <div className="md:hidden">
           <AnimatePresence mode="wait">
