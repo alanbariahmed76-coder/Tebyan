@@ -165,6 +165,7 @@ function CourseDetail() {
                     </div>
                   </div>
                 )}
+                <button onClick={() => { if (!user) { toast("سجّل دخولك أولاً"); return; } toggleFavorite(course.id); }} className="w-full py-3 rounded-xl border border-border font-bold hover:bg-secondary transition flex items-center justify-center gap-2">
                   <Heart className={`size-4 ${isFavorite(course.id) ? "fill-destructive text-destructive" : ""}`} />
                   {isFavorite(course.id) ? "في المفضلة" : "أضف للمفضلة"}
                 </button>
