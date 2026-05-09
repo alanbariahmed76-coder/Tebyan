@@ -341,3 +341,125 @@ function ModuleAccordion({
     </div>
   );
 }
+
+function parseDuration(d: string): number {
+  // "08:25" → 505 seconds
+  const parts = d.split(":").map((n) => parseInt(n, 10) || 0);
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return 60;
+}
+
+function fmt(s: number): string {
+  const m = Math.floor(s / 60);
+  const r = Math.floor(s % 60);
+  return `${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
+}
+
+function LessonPlayer({
+  lesson, poster, isCompleted, onComplete, onNext,
+}: {
+  lesson: Lesson;
+  poster: string;
+  isCompleted: boolean;
+  onComplete: () => void;
+  onNext: () => void;
+}) {
+  // Demo player: simulate playback over 30s mapped to the lesson duration
+  const realDuration = parseDuration(lesson.duration);
+  const PLAYBACK_SECONDS = 30; // demo time to reach 100%
+  const [elapsed, setElapsed] = useState(0); // 0..PLAYBACK_SECONDS
+  const [playing, setPlaying] = useState(true);
+  const completedRef = useRef(false);
+
+  useEffect(() => {
+    setElapsed(0);
+    setPlaying(true);
+    completedRef.current = false;
+  }, [lesson.id]);
+
+  useEffect(() => {
+    if (!playing) return;
+    const id = setInterval(() => {
+      setElapsed((e) => {
+        const next = Math.min(PLAYBACK_SECONDS, e + 0.25);
+        if (next >= PLAYBACK_SECONDS && !completedRef.current) {
+          completedRef.current = true;
+          setPlaying(false);
+          onComplete();
+        }
+        return next;
+      });
+    }, 250);
+    return () => clearInterval(id);
+  }, [playing, onComplete]);
+
+  const pct = (elapsed / PLAYBACK_SECONDS) * 100;
+  const shownTime = (elapsed / PLAYBACK_SECONDS) * realDuration;
+
+  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    // RTL: start from right edge
+    const x = rect.right - e.clientX;
+    const ratio = Math.max(0, Math.min(1, x / rect.width));
+    setElapsed(ratio * PLAYBACK_SECONDS);
+    completedRef.current = ratio >= 1;
+  };
+
+  return (
+    <div className="relative aspect-video bg-black overflow-hidden">
+      <img src={poster} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/60 via-primary/40 to-black/80" />
+
+      {/* Animated visualization */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <motion.div
+          className="size-40 rounded-full border-4 border-gold/40"
+          animate={playing ? { scale: [1, 1.15, 1], opacity: [0.4, 0.8, 0.4] } : { scale: 1, opacity: 0.4 }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        <div className="absolute text-center text-white">
+          <p className="text-xs text-white/70 mb-1">يُشغَّل الآن</p>
+          <p className="text-sm font-bold line-clamp-2 px-6">{lesson.title}</p>
+          {isCompleted && (
+            <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full">
+              <CheckCircle2 className="size-3" /> مكتمل
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
+        <div onClick={seek} className="group h-1.5 bg-white/20 rounded-full overflow-hidden cursor-pointer hover:h-2 transition-all">
+          <div className="h-full bg-gold-gradient transition-[width] duration-150" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-2 text-white">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPlaying((p) => !p)}
+              className="size-9 rounded-full bg-gold-gradient text-gold-foreground flex items-center justify-center shadow-gold hover:scale-105 transition"
+              aria-label={playing ? "إيقاف" : "تشغيل"}
+            >
+              {playing ? <Pause className="size-4 fill-current" /> : <Play className="size-4 fill-current ms-0.5" />}
+            </button>
+            <button
+              onClick={() => { setElapsed(0); completedRef.current = false; setPlaying(true); }}
+              className="size-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition"
+              aria-label="إعادة"
+            >
+              <RotateCcw className="size-4" />
+            </button>
+            <span className="text-xs font-mono tabular-nums text-white/80">{fmt(shownTime)} / {fmt(realDuration)}</span>
+          </div>
+          <button
+            onClick={onNext}
+            className="text-xs font-bold flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition"
+          >
+            الدرس التالي <SkipForward className="size-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
