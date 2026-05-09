@@ -22,7 +22,7 @@ export function Hero() {
           </span>
           <h1 className="mt-6 text-4xl md:text-5xl lg:text-6xl font-black leading-[1.2]">
             <span className="block">طوّر مهاراتك اليوم في</span>
-            <span className="block bg-gold-gradient bg-clip-text text-yellow-500">10 دقائق فقط</span>
+            <span className="block bg-gold-gradient bg-clip-text text-slate-50">10 دقائق فقط</span>
             <span className="block mt-2">منصتك العربية للمعرفة العملية</span>
           </h1>
           <p className="mt-6 text-lg text-primary-foreground/75 max-w-xl">
