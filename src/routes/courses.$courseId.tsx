@@ -146,18 +146,23 @@ function CourseDetail() {
           {/* Player / Sidebar */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="lg:row-span-2">
             <div className="bg-card text-foreground rounded-2xl overflow-hidden shadow-luxe border border-border sticky top-24">
-              <div className="relative aspect-video bg-primary">
-                <img src={course.img} alt={course.title} className="w-full h-full object-cover opacity-60" />
-                <button onClick={handleEnroll} className="absolute inset-0 m-auto size-20 rounded-full bg-gold-gradient text-gold-foreground flex items-center justify-center shadow-gold hover:scale-110 transition">
-                  <Play className="size-8 fill-current ms-1" />
-                </button>
-                {currentLesson && (
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                    <p className="text-xs text-white/70">يُشغَّل الآن</p>
-                    <p className="text-sm font-bold text-white line-clamp-1">{currentLesson.title}</p>
-                  </div>
-                )}
-              </div>
+              {currentLesson ? (
+                <LessonPlayer
+                  key={currentLesson.id}
+                  lesson={currentLesson}
+                  poster={course.img}
+                  isCompleted={completed.includes(currentLesson.id)}
+                  onComplete={() => handleLessonComplete(currentLesson.id)}
+                  onNext={goNextLesson}
+                />
+              ) : (
+                <div className="relative aspect-video bg-primary">
+                  <img src={course.img} alt={course.title} className="w-full h-full object-cover opacity-60" />
+                  <button onClick={handleEnroll} className="absolute inset-0 m-auto size-20 rounded-full bg-gold-gradient text-gold-foreground flex items-center justify-center shadow-gold hover:scale-110 transition">
+                    <Play className="size-8 fill-current ms-1" />
+                  </button>
+                </div>
+              )}
               <div className="p-6 space-y-4">
                 <div className="flex items-baseline justify-between">
                   <span className="text-3xl font-black text-primary">{course.price} <span className="text-sm text-muted-foreground font-normal">ر.س</span></span>
