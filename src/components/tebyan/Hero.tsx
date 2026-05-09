@@ -1,8 +1,11 @@
 import { motion } from "framer-motion";
 import { Play, Sparkles, ArrowLeft } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import heroImg from "@/assets/hero-tablet.jpg";
 
 export function Hero() {
+  const nav = useNavigate();
   return (
     <section id="home" className="relative overflow-hidden bg-hero text-primary-foreground">
       <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:32px_32px]" />
@@ -26,11 +29,11 @@ export function Hero() {
             انضم إلى تبيان واحصل على وصول غير محدود لمئات الدورات الاحترافية بإشراف نخبة من الخبراء العرب.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4 justify-end lg:justify-start">
-            <button className="group inline-flex items-center gap-2 bg-gold-gradient text-gold-foreground px-7 py-4 rounded-full text-base font-bold shadow-gold hover:scale-[1.03] transition">
+            <button onClick={() => nav({ to: "/login" })} className="group inline-flex items-center gap-2 bg-gold-gradient text-gold-foreground px-7 py-4 rounded-full text-base font-bold shadow-gold hover:scale-[1.03] transition">
               ابدأ تجربتك المجانية الآن
               <ArrowLeft className="size-4 group-hover:-translate-x-1 transition" />
             </button>
-            <button className="inline-flex items-center gap-2 px-6 py-4 rounded-full border border-white/20 text-sm font-semibold hover:bg-white/5 transition">
+            <button onClick={() => toast("سيُفتح العرض التعريفي قريباً 🎬")} className="inline-flex items-center gap-2 px-6 py-4 rounded-full border border-white/20 text-sm font-semibold hover:bg-white/5 transition">
               <Play className="size-4 fill-current" />
               شاهد العرض التعريفي
             </button>
@@ -51,7 +54,7 @@ export function Hero() {
           <div className="absolute -inset-10 bg-gold/20 blur-3xl rounded-full" />
           <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-luxe">
             <img src={heroImg} alt="منصة تبيان التعليمية" width={1280} height={960} className="w-full h-auto" />
-            <button aria-label="تشغيل" className="absolute inset-0 m-auto size-20 rounded-full bg-gold-gradient text-gold-foreground flex items-center justify-center shadow-gold hover:scale-110 transition">
+            <button onClick={() => toast("جاري تحميل المعاينة...")} aria-label="تشغيل" className="absolute inset-0 m-auto size-20 rounded-full bg-gold-gradient text-gold-foreground flex items-center justify-center shadow-gold hover:scale-110 transition">
               <Play className="size-8 fill-current ms-1" />
             </button>
           </div>
