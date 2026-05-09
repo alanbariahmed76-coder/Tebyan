@@ -2,11 +2,12 @@ import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-ro
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowLeft, Star, Clock, Users, BookOpen, Award, Play, CheckCircle2, Circle, Lock, Heart, ChevronDown } from "lucide-react";
+import { ArrowLeft, Star, Clock, Users, BookOpen, Award, Play, CheckCircle2, Circle, Lock, Heart, ChevronDown, Download, Eye } from "lucide-react";
 import { getCourseById, totalLessons, type Course } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
 import { Navbar } from "@/components/tebyan/Navbar";
 import { Footer } from "@/components/tebyan/Footer";
+import { downloadCertificatePDF, previewCertificate } from "@/lib/certificate";
 
 export const Route = createFileRoute("/courses/$courseId")({
   loader: ({ params }) => {
@@ -140,6 +141,30 @@ function CourseDetail() {
                 <button onClick={handleEnroll} className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold shadow-luxe hover:opacity-95 transition">
                   {!enrolled ? "سجّل الآن وابدأ التعلم" : nextLesson ? "متابعة التعلم" : "مراجعة الدورة"}
                 </button>
+
+                {enrolled && progress === 100 && (
+                  <div className="rounded-xl border border-gold/40 bg-gold/10 p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-gold">
+                      <Award className="size-5" />
+                      <span className="font-black text-sm">تهانينا! أكملت الدورة 🎉</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">شهادتك جاهزة. يمكنك معاينتها أو تنزيلها بصيغة PDF.</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => previewCertificate({ studentName: user?.name || "متدرّب تبيان", courseTitle: course.title, instructor: course.instructor })}
+                        className="py-2.5 rounded-lg bg-secondary text-foreground text-sm font-bold hover:bg-secondary/80 transition flex items-center justify-center gap-1.5"
+                      >
+                        <Eye className="size-4" /> معاينة
+                      </button>
+                      <button
+                        onClick={() => { downloadCertificatePDF({ studentName: user?.name || "متدرّب تبيان", courseTitle: course.title, instructor: course.instructor }); toast.success("تم تنزيل الشهادة"); }}
+                        className="py-2.5 rounded-lg bg-gold-gradient text-gold-foreground text-sm font-black shadow-gold hover:scale-[1.02] transition flex items-center justify-center gap-1.5"
+                      >
+                        <Download className="size-4" /> تنزيل PDF
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <button onClick={() => { if (!user) { toast("سجّل دخولك أولاً"); return; } toggleFavorite(course.id); }} className="w-full py-3 rounded-xl border border-border font-bold hover:bg-secondary transition flex items-center justify-center gap-2">
                   <Heart className={`size-4 ${isFavorite(course.id) ? "fill-destructive text-destructive" : ""}`} />
                   {isFavorite(course.id) ? "في المفضلة" : "أضف للمفضلة"}
