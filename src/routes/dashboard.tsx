@@ -87,7 +87,7 @@ function StudentDashboard() {
                 ) : (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {enrolledCourses.slice(0, 3).map((c) => (
-                      <ProgressCard key={c.id} c={c} progress={progressOf(c)} onContinue={() => nav({ to: "/courses/$courseId", params: { courseId: c.id } })} />
+                      <ProgressCard key={c.id} c={c} progress={progressOf(c)} onContinue={() => nav({ to: "/courses/$courseId", params: { courseId: c.id }, search: { resume: true } })} />
                     ))}
                   </div>
                 )}
@@ -106,7 +106,7 @@ function StudentDashboard() {
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                   {filtered.map((c) => (
-                    <ProgressCard key={c.id} c={c} progress={progressOf(c)} onContinue={() => nav({ to: "/courses/$courseId", params: { courseId: c.id } })} />
+                    <ProgressCard key={c.id} c={c} progress={progressOf(c)} onContinue={() => nav({ to: "/courses/$courseId", params: { courseId: c.id }, search: { resume: true } })} />
                   ))}
                 </div>
               )}

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Clock, Play, Heart, Users, ChevronRight, ChevronLeft } from "lucide-react";
+import { Star, Clock, Play, Heart, Users, ChevronRight, ChevronLeft, Search } from "lucide-react";
 import { toast } from "sonner";
 import { courses, categories, type Course } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
@@ -13,16 +13,30 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
+type SortKey = "newest" | "rating" | "title";
+
 export function Courses() {
   const [active, setActive] = useState("الكل");
   const [visible, setVisible] = useState(8);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
   const { user, isEnrolled, isFavorite, toggleFavorite } = useAuth();
   const nav = useNavigate();
 
-  const filtered = active === "الكل" ? courses : courses.filter((c) => c.cat === active);
+  const filtered = useMemo(() => {
+    const q = query.trim();
+    let list = active === "الكل" ? courses : courses.filter((c) => c.cat === active);
+    if (q) list = list.filter((c) => c.title.includes(q) || c.instructor.includes(q));
+    const out = [...list];
+    if (sort === "rating") out.sort((a, b) => b.rating - a.rating);
+    else if (sort === "title") out.sort((a, b) => a.title.localeCompare(b.title, "ar"));
+    else out.sort((a, b) => Number(b.id.replace("c-", "")) - Number(a.id.replace("c-", "")));
+    return out;
+  }, [active, query, sort]);
   const shown = filtered.slice(0, visible);
 
-  const goDetail = (id: string) => nav({ to: "/courses/$courseId", params: { courseId: id } });
+  const goDetail = (id: string, resume = false) =>
+    nav({ to: "/courses/$courseId", params: { courseId: id }, search: resume ? { resume: true } : {} });
 
   const handleFavorite = (id: string) => {
     if (!user) {
@@ -57,6 +71,38 @@ export function Courses() {
           </div>
         </div>
 
+        {/* Search + Sort */}
+        <div className="mb-8 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-card border border-border rounded-2xl p-3">
+          <div className="relative flex-1">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setVisible(8); }}
+              placeholder="ابحث عن دورة أو مدرّب..."
+              className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-secondary/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-muted-foreground whitespace-nowrap">ترتيب حسب:</label>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="px-4 py-2.5 rounded-xl bg-secondary/50 text-sm font-semibold text-primary border-0 focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+            >
+              <option value="newest">الأحدث</option>
+              <option value="rating">الأعلى تقييماً</option>
+              <option value="title">العنوان (أ-ي)</option>
+            </select>
+          </div>
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="text-center py-16 bg-card rounded-2xl border border-border">
+            <p className="font-bold text-primary">لا توجد نتائج مطابقة</p>
+            <p className="text-sm text-muted-foreground mt-1">جرّب كلمة بحث أو تصنيفاً مختلفاً</p>
+          </div>
+        )}
+
         {/* Mobile carousel */}
         <div className="md:hidden">
           <AnimatePresence mode="wait">
@@ -75,7 +121,7 @@ export function Courses() {
                         c={c}
                         enrolled={isEnrolled(c.id)}
                         favorite={isFavorite(c.id)}
-                        onOpen={() => goDetail(c.id)}
+                        onOpen={() => goDetail(c.id, isEnrolled(c.id))}
                         onFavorite={() => handleFavorite(c.id)}
                       />
                     </CarouselItem>
@@ -111,7 +157,7 @@ export function Courses() {
                   c={c}
                   enrolled={isEnrolled(c.id)}
                   favorite={isFavorite(c.id)}
-                  onOpen={() => goDetail(c.id)}
+                  onOpen={() => goDetail(c.id, isEnrolled(c.id))}
                   onFavorite={() => handleFavorite(c.id)}
                 />
               ))}
