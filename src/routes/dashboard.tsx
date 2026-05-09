@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/auth";
-import { courses, dashboardStats } from "@/lib/mock-data";
+import { courses, dashboardStats, totalLessons, type Course } from "@/lib/mock-data";
 import { DashboardSidebar } from "@/components/tebyan/DashboardSidebar";
 import { BookOpen, Award, Clock, TrendingUp, Play, CheckCircle2, Heart, Star, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function StudentDashboard() {
-  const { user, enrolled, favorites, toggleFavorite } = useAuth();
+  const { user, enrolled, favorites, toggleFavorite, getCompleted } = useAuth();
   const nav = useNavigate();
   const [tab, setTab] = useState("نظرة عامة");
   const [search, setSearch] = useState("");
@@ -29,10 +29,16 @@ function StudentDashboard() {
 
   if (!user) return null;
 
-  const enrolledCourses = courses.filter((c) => enrolled.includes(c.title));
-  const favoriteCourses = courses.filter((c) => favorites.includes(c.title));
+  const enrolledCourses = courses.filter((c) => enrolled.includes(c.id));
+  const favoriteCourses = courses.filter((c) => favorites.includes(c.id));
   const filtered = enrolledCourses.filter((c) => c.title.includes(search));
   const stats = dashboardStats.student;
+  const progressOf = (c: Course) => {
+    const done = getCompleted(c.id).length;
+    const total = totalLessons(c);
+    return total ? Math.round((done / total) * 100) : 0;
+  };
+  const completedCount = enrolledCourses.filter((c) => progressOf(c) === 100).length;
 
   return (
     <div dir="rtl" className="min-h-screen bg-secondary/30 flex">
