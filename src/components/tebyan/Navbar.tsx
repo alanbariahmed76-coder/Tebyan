@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 const links = [
   { label: "الرئيسية", href: "#home" },
-  { label: "المساقات", href: "#courses" },
+  { label: "الدورات", href: "#courses" },
   { label: "المدربون", href: "#instructors" },
   { label: "الأسعار", href: "#pricing" },
 ];
