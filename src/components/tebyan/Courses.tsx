@@ -2,9 +2,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Clock, Play, Heart, Users, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
-import { courses, categories } from "@/lib/mock-data";
+import { courses, categories, type Course } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link } from "@tanstack/react-router";
 import {
   Carousel,
   CarouselContent,
@@ -16,32 +16,21 @@ import {
 export function Courses() {
   const [active, setActive] = useState("الكل");
   const [visible, setVisible] = useState(8);
-  const { user, isEnrolled, isFavorite, enroll, toggleFavorite } = useAuth();
+  const { user, isEnrolled, isFavorite, toggleFavorite } = useAuth();
   const nav = useNavigate();
 
   const filtered = active === "الكل" ? courses : courses.filter((c) => c.cat === active);
   const shown = filtered.slice(0, visible);
 
-  const handleEnroll = (title: string) => {
-    if (!user) {
-      toast("سجّل الدخول للالتحاق بالدورة", { action: { label: "تسجيل", onClick: () => nav({ to: "/login" }) } });
-      return;
-    }
-    if (isEnrolled(title)) {
-      toast.info("أنت مسجّل مسبقاً، توجّه للوحة التحكم");
-      return;
-    }
-    enroll(title);
-    toast.success(`تم التسجيل في "${title.slice(0, 30)}..."`);
-  };
+  const goDetail = (id: string) => nav({ to: "/courses/$courseId", params: { courseId: id } });
 
-  const handleFavorite = (title: string) => {
+  const handleFavorite = (id: string) => {
     if (!user) {
       toast("سجّل الدخول لإضافة الدورة للمفضلة");
       return;
     }
-    toggleFavorite(title);
-    toast(isFavorite(title) ? "أُزيلت من المفضلة" : "أُضيفت للمفضلة");
+    toggleFavorite(id);
+    toast(isFavorite(id) ? "أُزيلت من المفضلة" : "أُضيفت للمفضلة");
   };
 
   return (
